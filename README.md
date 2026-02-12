@@ -1,54 +1,83 @@
-# Call Center Agent Assist — STT → RAG → Gemini (Pipecat)
+# Cymbal Assist — Real-time Call Center Agent Assist
 
-Real-time call-center agent-assist system built with [Pipecat](https://github.com/pipecat-ai/pipecat).
-Customer speech is transcribed live, grounded via Vertex AI RAG Engine, and answered by Gemini —
-all displayed on the agent's dashboard.
+Real-time call-center agent-assist dashboard that transcribes customer speech live,
+retrieves context from a Vertex AI RAG corpus, and streams RAG-grounded Gemini responses —
+all in a WhatsApp-style chat UI the agent can read while on the call.
 
 ## Architecture
 
 ```
-Customer Audio (mic) ──► FastAPIWebsocketTransport
-                              │
-                         SileroVAD (turn detection)
-                              │
-                         GoogleSTTService (chirp_3)
-                              │
-                         RAGProcessor (Vertex AI RAG Engine)
-                              │
-                         GoogleLLMService (Gemini Flash)
-                              │
-                         TranscriptProcessor
-                              │
-                    Agent Dashboard (WebSocket)
-                    ┌─────────┴─────────┐
-                    │  Customer         │  AI Response
-                    │  Transcript       │  (RAG-grounded)
-                    └───────────────────┘
+Browser Mic ──► AudioWorklet (20ms PCM-16 chunks)
+                    │
+                WebSocket (binary)
+                    │
+               FastAPI Server (Cloud Run)
+                    │
+        ┌───────────┴───────────┐
+        ▼                       ▼
+  Streaming STT             Gemini 2.5 Flash
+  (Chirp 3, V2 API)        + RAG Tool (google.genai SDK)
+  interim + final           streaming chunks
+  transcripts               via send_message_stream
+        │                       │
+        └───────────┬───────────┘
+                    ▼
+             WebSocket (JSON)
+                    │
+           Agent Dashboard
+        ┌──────────┴──────────┐
+        │ 🎤 Customer         │ 🤖 AI Assistant
+        │ (live transcript)   │ (streamed, RAG-grounded)
+        │                     │ ⏱ latency badge
+        └─────────────────────┘
 ```
 
 **Pipeline** (no TTS — agent reads responses on screen):
 
 ```
-transport.input() → STT → RAGProcessor → transcript.user()
-    → context_aggregator.user() → LLM → transcript.assistant()
-    → context_aggregator.assistant() → transport.output()
+Audio (PCM-16, 16kHz) → Streaming STT (Chirp 3) → Final transcript
+    → Gemini 2.5 Flash (with RAG tool, streaming) → Agent dashboard
 ```
+
+## Key Features
+
+- **Streaming STT** — Chirp 3 model via Cloud Speech V2 with interim results for real-time display
+- **Auto language detection** — Chirp 3 `auto` mode or select from 11 Indian languages
+- **RAG-grounded responses** — Vertex AI RAG Engine corpus as a native Gemini tool (retrieval)
+- **Streaming LLM** — `send_message_stream` with thread + asyncio.Queue pattern (non-blocking)
+- **Chat memory** — persistent `ChatSession` keeps full conversation context
+- **AudioWorklet** — dedicated audio thread with 20ms PCM chunks, downsampled to 16kHz
+- **Latency tracking** — per-response TTFC (Time To First Chunk) and total response time in UI
+- **WhatsApp-style UI** — customer bubbles (left), AI bubbles (right) with streaming text
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| **Frontend** | Vanilla JS, AudioWorklet, WebSocket |
+| **Server** | FastAPI + Uvicorn, Python 3.12 |
+| **STT** | Google Cloud Speech-to-Text V2 (Chirp 3), `us` multi-region |
+| **LLM** | Gemini 2.5 Flash via `google-genai` SDK (Vertex AI backend) |
+| **RAG** | Vertex AI RAG Engine (corpus as Gemini retrieval tool) |
+| **Deploy** | Cloud Build → Cloud Run (`us-central1`) |
 
 ## Prerequisites
 
-- Python 3.10+
+- Python 3.12+
 - Google Cloud SDK (`gcloud auth application-default login`)
 - GCP project with:
-  - Gemini API key
+  - Cloud Speech-to-Text V2 API enabled
+  - Vertex AI API enabled
   - Vertex AI RAG Engine corpus provisioned
-  - Cloud Speech-to-Text API enabled
+  - Cloud Run API enabled
 
 ## Quick Start
 
 ### 1. Clone & install
 
 ```bash
-cd streaming-stt-rag
+git clone https://github.com/Ashishkamble004/cymbalassist.git
+cd cymbalassist
 python -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
@@ -56,10 +85,16 @@ pip install -r requirements.txt
 
 ### 2. Configure
 
+Create a `.env` file (or set environment variables):
+
 ```bash
-cp .env.example .env
-# Edit .env with your keys:
-#   GEMINI_API_KEY, GCP_PROJECT_ID, RAG_CORPUS_RESOURCE_NAME
+GCP_PROJECT_ID=your-project-id
+GCP_LOCATION=us-central1
+RAG_CORPUS_RESOURCE_NAME=projects/your-project/locations/us-central1/ragCorpora/YOUR_CORPUS_ID
+STT_MODEL=chirp_3
+STT_LOCATION=us
+STT_LANGUAGE=auto
+LLM_MODEL=gemini-2.5-flash
 ```
 
 ### 3. Authenticate to GCP
@@ -68,46 +103,74 @@ cp .env.example .env
 gcloud auth application-default login
 ```
 
-### 4. Run
+### 4. Run locally
 
 ```bash
 python run.py
 ```
 
-Open **http://localhost:8000** — enter your Gemini API key and click **Connect & Start**.
+Open **http://localhost:8000** — click **Connect & Start**, allow mic access, and start speaking.
+
+### 5. Deploy to Cloud Run
+
+```bash
+gcloud builds submit --config=cloudbuild.yaml --region=us-central1
+```
 
 ## Project Structure
 
 ```
-streaming-stt-rag/
+cymbalassist/
 ├── app/
-│   ├── agent.py              # Pipecat pipeline (STT → RAG → LLM)
-│   ├── config.py             # Settings from .env
-│   ├── server.py             # FastAPI server (/ws, /connect, /)
-│   ├── services/
-│   │   └── rag_service.py    # Vertex AI RAG Engine client
+│   ├── __init__.py
+│   ├── agent.py                # Core pipeline: Streaming STT → RAG → LLM (streaming)
+│   ├── config.py               # Settings from env vars / .env
+│   ├── server.py               # FastAPI server with WebSocket endpoint
 │   └── static/
-│       └── index.html        # Agent dashboard (RTVI client)
-├── .env.example
+│       ├── audio-processor.js  # AudioWorklet: 20ms PCM-16 capture at 16kHz
+│       └── index.html          # Agent dashboard (WhatsApp-style chat UI)
+├── cloudbuild.yaml             # Cloud Build → Cloud Run pipeline
+├── Dockerfile                  # Python 3.12-slim container
 ├── requirements.txt
-├── run.py
+├── run.py                      # Entry point (uvicorn)
 └── README.md
 ```
 
 ## Key Components
 
-| Component | Description |
-|---|---|
-| `FastAPIWebsocketTransport` | Pipecat transport — handles audio I/O via WebSocket |
-| `GoogleSTTService` | Google Cloud Speech-to-Text (chirp_3 model) |
-| `RAGProcessor` | Custom `FrameProcessor` — runs Vertex AI RAG retrieval per turn |
-| `GoogleLLMService` | Gemini Flash via Pipecat — generates RAG-grounded responses |
-| `TranscriptProcessor` | Captures user & assistant text, sends to dashboard |
-| `SileroVADAnalyzer` | Voice Activity Detection for turn management |
+| Component | File | Description |
+|---|---|---|
+| `StreamingSTTManager` | `agent.py` | Manages Chirp 3 streaming via background thread + audio queue |
+| `run_agent` | `agent.py` | WebSocket handler: creates genai client, RAG tool, chat session |
+| `process_with_rag_llm` | `agent.py` | Streams Gemini response via thread + asyncio.Queue (non-blocking) |
+| `PCMProcessor` | `audio-processor.js` | AudioWorklet: accumulates 20ms of audio, downsamples, sends PCM-16 |
+| Dashboard | `index.html` | WhatsApp-style chat with streaming bubbles + latency badges |
 
-## Reference
+## WebSocket Protocol
 
-Built following the patterns from:
-[gemini_live_stt_pipecat](https://github.com/Ashishkamble004/gemini_live_stt_pipecat)
-(STT + LLM pipeline, adapted for call-center RAG use case without TTS)
-# cymbalassist
+### Client → Server (binary)
+Raw PCM-16 audio chunks (16kHz, mono, little-endian).
+
+### Server → Client (JSON)
+
+| `type` | `role` | Description |
+|---|---|---|
+| `transcription` | `user` | Interim (`is_final: false`) or final (`is_final: true`) transcript |
+| `stream_start` | `assistant` | LLM stream beginning — create empty bubble |
+| `stream_chunk` | `assistant` | LLM text chunk — append to bubble |
+| `stream_end` | `assistant` | LLM stream complete — finalize bubble |
+| `error` | — | Error message |
+
+## Configuration
+
+| Variable | Default | Description |
+|---|---|---|
+| `GCP_PROJECT_ID` | `general-ak` | Google Cloud project |
+| `GCP_LOCATION` | `us-central1` | Vertex AI / Cloud Run region |
+| `RAG_CORPUS_RESOURCE_NAME` | — | Full resource name of RAG corpus |
+| `STT_MODEL` | `chirp_3` | Speech-to-Text model |
+| `STT_LOCATION` | `us` | STT multi-region endpoint |
+| `STT_LANGUAGE` | `auto` | Language code(s) — `auto` for auto-detect |
+| `LLM_MODEL` | `gemini-2.5-flash` | Gemini model |
+| `HOST` | `0.0.0.0` | Server bind address |
+| `PORT` | `8000` | Server port (Cloud Run overrides to 8080) |

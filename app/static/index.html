@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Agent Assist Dashboard</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:        #0f1117;
+      --surface:   #1a1d27;
+      --border:    #2a2d3a;
+      --text:      #e4e4e7;
+      --muted:     #71717a;
+      --accent:    #6366f1;
+      --accent-lo: #6366f120;
+      --green:     #22c55e;
+      --red:       #ef4444;
+      --amber:     #f59e0b;
+      --radius:    12px;
+    }
+    html, body {
+      height: 100vh;
+      overflow: hidden;
+    }
+    body {
+      font-family: "Inter", system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Header ─────────────────────────────────────────── */
+    .header {
+      flex-shrink: 0;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 1rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .header h1 { font-size: 1.2rem; font-weight: 700; }
+    .header .subtitle { color: var(--muted); font-size: .8rem; }
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: .4rem;
+      padding: .3rem .75rem;
+      border-radius: 20px;
+      font-size: .75rem;
+      font-weight: 600;
+      background: #22c55e18;
+      color: var(--green);
+    }
+    .status-badge.disconnected { background: #ef444418; color: var(--red); }
+    .status-badge.connecting   { background: #f59e0b18; color: var(--amber); }
+    .status-badge .dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: currentColor;
+    }
+
+    /* ── Main layout ────────────────────────────────────── */
+    .main { display: flex; flex: 1; overflow: hidden; }
+
+    /* ── Sidebar (config) ───────────────────────────────── */
+    .sidebar {
+      width: 320px;
+      min-width: 320px;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      overflow: hidden;
+    }
+    .sidebar h3 {
+      font-size: .72rem;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: var(--muted);
+      margin-bottom: .5rem;
+    }
+    .field { display: flex; flex-direction: column; gap: .3rem; }
+    .field label {
+      font-size: .75rem; color: var(--muted); font-weight: 500;
+    }
+    .field input, .field select {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: .55rem .75rem;
+      color: var(--text);
+      font-size: .85rem;
+      outline: none;
+    }
+    .field input:focus, .field select:focus {
+      border-color: var(--accent);
+    }
+    .btn {
+      padding: .65rem 1.25rem;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: .85rem;
+      cursor: pointer;
+      transition: all .15s;
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+    }
+    .btn-primary:hover { opacity: .9; }
+    .btn-danger {
+      background: var(--red);
+      color: #fff;
+    }
+    .btn-danger:hover { opacity: .9; }
+    .btn:disabled { opacity: .4; cursor: not-allowed; }
+
+    /* ── Chat container ─────────────────────────────────── */
+    .content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: var(--bg);
+      overflow: hidden;
+    }
+    .chat-header {
+      padding: .75rem 1.25rem;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+    }
+    .chat-header h2 { font-size: .85rem; font-weight: 600; }
+    .chat-header .icon {
+      width: 28px; height: 28px;
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: .85rem;
+      background: #6366f120; color: #6366f1;
+    }
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1rem 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: .5rem;
+      background:
+        radial-gradient(circle at 20% 50%, #1a1d2718 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, #6366f108 0%, transparent 40%),
+        var(--bg);
+    }
+    .chat-messages::-webkit-scrollbar { width: 6px; }
+    .chat-messages::-webkit-scrollbar-thumb {
+      background: var(--border); border-radius: 3px;
+    }
+
+    /* ── Chat bubbles (WhatsApp-style) ───────────────────── */
+    .bubble {
+      max-width: 75%;
+      padding: .65rem .9rem .45rem;
+      border-radius: 12px;
+      font-size: .88rem;
+      line-height: 1.55;
+      white-space: pre-wrap;
+      word-break: break-word;
+      position: relative;
+      animation: bubbleIn .2s ease;
+    }
+    @keyframes bubbleIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .bubble-left {
+      align-self: flex-start;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-bottom-left-radius: 4px;
+    }
+    .bubble-right {
+      align-self: flex-end;
+      background: #0d2818;
+      border: 1px solid #22c55e30;
+      border-bottom-right-radius: 4px;
+    }
+    .bubble-meta {
+      display: flex;
+      align-items: center;
+      gap: .4rem;
+      margin-bottom: .2rem;
+    }
+    .bubble-role {
+      font-size: .68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+    .bubble-left .bubble-role  { color: #3b82f6; }
+    .bubble-right .bubble-role { color: #22c55e; }
+    .bubble-time {
+      font-size: .62rem;
+      color: var(--muted);
+    }
+    .bubble-text {
+      font-size: .88rem;
+      line-height: 1.55;
+    }
+    .bubble.interim {
+      opacity: .65;
+      border-style: dashed;
+    }
+    .bubble-latency {
+      display: inline-block;
+      margin-top: .3rem;
+      padding: .15rem .45rem;
+      border-radius: 6px;
+      font-size: .62rem;
+      font-weight: 600;
+      font-family: monospace;
+      background: #6366f120;
+      color: #6366f1;
+    }
+
+    /* ── Typing indicator bar ────────────────────────────── */
+    .typing-bar {
+      padding: .5rem 1.25rem;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      display: none;
+      align-items: center;
+      gap: .5rem;
+      font-size: .78rem;
+      color: var(--muted);
+    }
+    .typing-bar.active { display: flex; }
+    .typing-dots { display: flex; gap: 3px; }
+    .typing-dots span {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--muted);
+      animation: bounce 1.4s infinite;
+    }
+    .typing-dots span:nth-child(2) { animation-delay: .2s; }
+    .typing-dots span:nth-child(3) { animation-delay: .4s; }
+    @keyframes bounce {
+      0%, 60%, 100% { transform: translateY(0); }
+      30% { transform: translateY(-4px); }
+    }
+
+    .placeholder {
+      color: var(--muted);
+      font-style: italic;
+      font-size: .85rem;
+      text-align: center;
+      padding: 2rem;
+    }
+
+    /* ── Debug log ──────────────────────────────────────── */
+    .debug-bar {
+      flex-shrink: 0;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      padding: .5rem 1.25rem;
+      font-size: .7rem;
+      color: var(--muted);
+      height: 80px;
+      overflow-y: auto;
+      font-family: monospace;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="header">
+    <div>
+      <h1>📞 Agent Assist Dashboard</h1>
+      <span class="subtitle">Real-time STT → RAG → Gemini</span>
+    </div>
+    <span class="status-badge disconnected" id="statusBadge">
+      <span class="dot"></span>
+      <span id="statusText">Disconnected</span>
+    </span>
+  </div>
+
+  <div class="main">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div>
+        <h3>Connection</h3>
+      </div>
+
+      <div>
+        <h3>Speech-to-Text</h3>
+        <div class="field">
+          <label for="sttModel">STT Model</label>
+          <select id="sttModel" disabled>
+            <option value="chirp_3" selected>chirp_3</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="sttLang">Language Detection</label>
+          <select id="sttLang">
+            <option value="auto" selected>Auto-detect (any language)</option>
+            <option value="hi-IN,en-IN">Hindi + English</option>
+            <option value="en-US">English (US)</option>
+            <option value="en-IN">English (India)</option>
+            <option value="hi-IN">Hindi</option>
+            <option value="mr-IN">Marathi</option>
+            <option value="ta-IN">Tamil</option>
+            <option value="te-IN">Telugu</option>
+            <option value="kn-IN">Kannada</option>
+            <option value="gu-IN">Gujarati</option>
+            <option value="bn-IN">Bengali</option>
+            <option value="ml-IN">Malayalam</option>
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <h3>LLM (Gemini)</h3>
+        <div class="field">
+          <label for="llmModel">Model</label>
+          <select id="llmModel" disabled>
+            <option value="gemini-2.5-flash" selected>gemini-2.5-flash</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="margin-top: auto; display: flex; flex-direction: column; gap: .5rem;">
+        <button class="btn btn-primary" id="connectBtn">Connect & Start</button>
+        <button class="btn btn-danger" id="disconnectBtn" disabled>Disconnect</button>
+      </div>
+    </div>
+
+    <!-- Content – WhatsApp-style unified chat -->
+    <div class="content">
+      <div class="chat-header">
+        <span class="icon">💬</span>
+        <h2>Live Conversation</h2>
+      </div>
+      <div class="chat-messages" id="chatMessages">
+        <p class="placeholder">Start a call to see the conversation…</p>
+      </div>
+      <div class="typing-bar" id="typingBar">
+        <div class="typing-dots"><span></span><span></span><span></span></div>
+        <span>Customer is speaking…</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Debug log -->
+  <div class="debug-bar" id="debugLog">Ready.</div>
+
+<script type="module">
+// ────────────────────────────────────────────────────────────────────────── //
+//  AudioWorklet + WebSocket  —  WhatsApp-style chat UI                       //
+// ────────────────────────────────────────────────────────────────────────── //
+
+const sttModelSel   = document.getElementById("sttModel");
+const sttLangSel    = document.getElementById("sttLang");
+const llmModelSel   = document.getElementById("llmModel");
+const connectBtn    = document.getElementById("connectBtn");
+const disconnectBtn = document.getElementById("disconnectBtn");
+const statusBadge   = document.getElementById("statusBadge");
+const statusText    = document.getElementById("statusText");
+const chatMessages  = document.getElementById("chatMessages");
+const typingBar     = document.getElementById("typingBar");
+const debugLog      = document.getElementById("debugLog");
+
+let ws = null;
+let audioContext = null;
+let mediaStream = null;
+let workletNode = null;
+let interimBubble = null;
+let assistantStreamBubble = null;
+let queryStartTime = null;          // timestamp when final transcript fires
+let firstChunkReceived = false;     // track TTFC
+
+// ── Helpers ───────────────────────────────────────────────────────────── //
+function log(msg) {
+  const ts = new Date().toLocaleTimeString();
+  debugLog.textContent = `[${ts}] ${msg}\n` + debugLog.textContent;
+}
+
+function setStatus(s) {
+  statusText.textContent = s;
+  statusBadge.className = "status-badge";
+  if (s === "Connected")       statusBadge.classList.add("connected");
+  else if (s === "Connecting") statusBadge.classList.add("connecting");
+  else                         statusBadge.classList.add("disconnected");
+}
+
+function timeNow() {
+  return new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+}
+
+function clearPlaceholder() {
+  const ph = chatMessages.querySelector(".placeholder");
+  if (ph) ph.remove();
+}
+
+function scrollChat() {
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+/** Create a WhatsApp-style chat bubble. */
+function makeBubble(role, text, interim = false) {
+  const side  = role === "user" ? "left" : "right";
+  const label = role === "user" ? "🎤 Customer" : "🤖 AI Assistant";
+  const div   = document.createElement("div");
+  div.className = `bubble bubble-${side}` + (interim ? " interim" : "");
+  div.innerHTML =
+    `<div class="bubble-meta">` +
+    `<span class="bubble-role">${label}</span>` +
+    `<span class="bubble-time">${timeNow()}</span>` +
+    `</div><div class="bubble-text"></div>`;
+  div.querySelector(".bubble-text").textContent = text;
+  return div;
+}
+
+// ── Connect ───────────────────────────────────────────────────────────── //
+connectBtn.addEventListener("click", async () => {
+  setStatus("Connecting");
+  connectBtn.disabled = true;
+  log("Connecting…");
+  chatMessages.innerHTML = '<p class="placeholder">Listening…</p>';
+
+  try {
+    mediaStream = await navigator.mediaDevices.getUserMedia({
+      audio: { channelCount: 1, sampleRate: { ideal: 16000 },
+               echoCancellation: true, noiseSuppression: true }
+    });
+
+    const proto = location.protocol === "https:" ? "wss:" : "ws:";
+    const wsUrl = `${proto}//${location.host}/ws`
+      + `?stt_model=${sttModelSel.value}`
+      + `&stt_language=${encodeURIComponent(sttLangSel.value)}`
+      + `&llm_model=${llmModelSel.value}`;
+
+    log(`WS → ${wsUrl}`);
+    ws = new WebSocket(wsUrl);
+    ws.binaryType = "arraybuffer";
+
+    ws.onopen = async () => {
+      setStatus("Connected");
+      disconnectBtn.disabled = false;
+      log("WebSocket connected");
+
+      audioContext = new AudioContext();
+      log(`Sample rate: ${audioContext.sampleRate} Hz`);
+      const source = audioContext.createMediaStreamSource(mediaStream);
+
+      // ── AudioWorklet – runs on dedicated audio thread ────────── //
+      await audioContext.audioWorklet.addModule("/static/audio-processor.js");
+      workletNode = new AudioWorkletNode(audioContext, "pcm-processor");
+      workletNode.port.onmessage = (e) => {
+        if (ws && ws.readyState === WebSocket.OPEN) ws.send(e.data);
+      };
+      source.connect(workletNode);
+      workletNode.connect(audioContext.destination);
+      log("AudioWorklet streaming started");
+    };
+
+    // ── Incoming messages ────────────────────────────────────────── //
+    ws.onmessage = (event) => {
+      if (typeof event.data !== "string") return;
+      try {
+        const msg = JSON.parse(event.data);
+
+        if (msg.type === "transcription" || msg.type === "transcript") {
+          const text = msg.text || msg.content || "";
+
+          // ── Customer (left side) ─────────────────────────────── //
+          if (msg.role === "user") {
+            clearPlaceholder();
+            if (msg.is_final === false) {
+              typingBar.classList.add("active");
+              if (!interimBubble) {
+                interimBubble = makeBubble("user", text, true);
+                chatMessages.appendChild(interimBubble);
+              } else {
+                interimBubble.querySelector(".bubble-text").textContent = text;
+              }
+            } else {
+              typingBar.classList.remove("active");
+              // Start latency timer on final transcript
+              queryStartTime = performance.now();
+              firstChunkReceived = false;
+              if (interimBubble) {
+                interimBubble.classList.remove("interim");
+                interimBubble.querySelector(".bubble-text").textContent = text;
+                interimBubble.querySelector(".bubble-time").textContent = timeNow();
+                interimBubble = null;
+              } else {
+                chatMessages.appendChild(makeBubble("user", text));
+              }
+            }
+            scrollChat();
+          }
+        }
+
+        // ── Streaming AI assistant (right side) ──────────────── //
+        if (msg.type === "stream_start" && msg.role === "assistant") {
+          clearPlaceholder();
+          assistantStreamBubble = makeBubble("assistant", "", true);
+          chatMessages.appendChild(assistantStreamBubble);
+          scrollChat();
+        }
+
+        if (msg.type === "stream_chunk" && msg.role === "assistant") {
+          if (assistantStreamBubble) {
+            // Record time-to-first-chunk
+            if (!firstChunkReceived && queryStartTime) {
+              firstChunkReceived = true;
+              const ttfc = ((performance.now() - queryStartTime) / 1000).toFixed(2);
+              log(`⚡ TTFC: ${ttfc}s`);
+            }
+            const el = assistantStreamBubble.querySelector(".bubble-text");
+            el.textContent += msg.text || "";
+            scrollChat();
+          }
+        }
+
+        if (msg.type === "stream_end" && msg.role === "assistant") {
+          if (assistantStreamBubble) {
+            assistantStreamBubble.classList.remove("interim");
+            // Calculate and display total latency
+            if (queryStartTime) {
+              const totalSec = ((performance.now() - queryStartTime) / 1000).toFixed(2);
+              const ttfc = firstChunkReceived ? "" : "";
+              const badge = document.createElement("div");
+              badge.className = "bubble-latency";
+              badge.textContent = `⏱ ${totalSec}s total`;
+              assistantStreamBubble.appendChild(badge);
+              log(`⏱ Response complete: ${totalSec}s total`);
+              queryStartTime = null;
+            }
+            assistantStreamBubble.querySelector(".bubble-time").textContent = timeNow();
+            assistantStreamBubble = null;
+          }
+        }
+
+        if (msg.type === "error") log(`Error: ${msg.text}`);
+      } catch { /* ignore non-JSON */ }
+    };
+
+    ws.onclose = () => {
+      setStatus("Disconnected");
+      connectBtn.disabled = false;
+      disconnectBtn.disabled = true;
+      typingBar.classList.remove("active");
+      log("WebSocket closed");
+      cleanup();
+    };
+
+    ws.onerror = () => {
+      log("WebSocket error");
+      setStatus("Disconnected");
+      connectBtn.disabled = false;
+      cleanup();
+    };
+  } catch (err) {
+    log(`Error: ${err.message}`);
+    setStatus("Disconnected");
+    connectBtn.disabled = false;
+    cleanup();
+  }
+});
+
+function cleanup() {
+  if (workletNode)  { workletNode.disconnect(); workletNode = null; }
+  if (audioContext)  { audioContext.close();     audioContext = null; }
+  if (mediaStream)   { mediaStream.getTracks().forEach(t => t.stop()); mediaStream = null; }
+  interimBubble = null;
+  assistantStreamBubble = null;
+}
+
+disconnectBtn.addEventListener("click", () => {
+  if (ws) { ws.close(); ws = null; }
+  cleanup();
+  setStatus("Disconnected");
+  connectBtn.disabled = false;
+  disconnectBtn.disabled = true;
+  typingBar.classList.remove("active");
+  log("Disconnected");
+});
+</script>
+</body>
+</html>

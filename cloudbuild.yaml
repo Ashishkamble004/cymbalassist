@@ -1,0 +1,46 @@
+steps:
+  # Build the container image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/agent-assist:$BUILD_ID'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/agent-assist:latest'
+      - '.'
+
+  # Push the container image to Container Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - '--all-tags'
+      - 'gcr.io/$PROJECT_ID/agent-assist'
+
+  # Deploy to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        gcloud run deploy agent-assist \
+          --image gcr.io/$PROJECT_ID/agent-assist:$BUILD_ID \
+          --region ${_REGION} \
+          --platform managed \
+          --allow-unauthenticated \
+          --port 8080 \
+          --memory 1Gi \
+          --cpu 1 \
+          --timeout 300 \
+          --concurrency 10 \
+          --min-instances 0 \
+          --max-instances 5 \
+          --set-env-vars "^@^GCP_PROJECT_ID=general-ak@GCP_LOCATION=${_REGION}@RAG_CORPUS_RESOURCE_NAME=projects/general-ak/locations/us-central1/ragCorpora/2305843009213693952@STT_MODEL=chirp_3@STT_LANGUAGE=hi-IN,en-IN,mr-IN,ta-IN,te-IN,kn-IN,gu-IN,bn-IN,ml-IN,pa-IN@LLM_MODEL=gemini-2.5-flash-lite-preview-06-17@HOST=0.0.0.0"
+
+substitutions:
+  _REGION: 'us-central1'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+
+images:
+  - 'gcr.io/$PROJECT_ID/agent-assist'
