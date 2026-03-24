@@ -80,7 +80,12 @@ Conversation transcript (segments numbered):
 class ComplianceMonitor:
     """Monitors call-center conversations for compliance violations."""
 
-    def __init__(self, client: genai.Client, llm_model: str):
+    def __init__(
+        self,
+        client: genai.Client,
+        llm_model: str,
+        min_analysis_interval: float = 3.0,
+    ):
         self.client = client
         self.llm_model = llm_model
         self.segments: List[str] = []
@@ -89,7 +94,7 @@ class ComplianceMonitor:
         self._alert_id_counter = 0
         self._analysis_lock = asyncio.Lock()
         self._last_analysis_time = 0.0
-        self._min_analysis_interval = 3.0
+        self._min_analysis_interval = min_analysis_interval
         self._last_analyzed_count = 0
 
     def add_segment(self, text: str) -> int:
