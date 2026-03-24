@@ -398,6 +398,10 @@
       background: #22c55e18;
       color: var(--green);
     }
+    .panel-subtitle {
+      font-size: .62rem;
+      color: var(--muted);
+    }
 
     /* ── Typing indicator bar ────────────────────────────── */
     .typing-bar {
@@ -509,7 +513,7 @@
           <span class="icon">🛡️</span>
           <div>
             <h2>Compliance Alerts</h2>
-            <span style="font-size:.6rem;color:var(--muted);">Credit card offer violation detection</span>
+            <span class="panel-subtitle">Credit card offer violation detection</span>
           </div>
         </div>
         <span class="alert-counter" id="alertCounter">0</span>
@@ -528,7 +532,7 @@
         <span class="icon">🤖</span>
         <div>
           <h2>Agent Assist</h2>
-          <span style="font-size:.65rem;color:var(--muted);">RAG-powered suggestions &amp; live transcription</span>
+          <span class="panel-subtitle">RAG-powered suggestions &amp; live transcription</span>
         </div>
       </div>
       <div class="chat-messages" id="chatMessages">
@@ -835,10 +839,10 @@ connectBtn.addEventListener("click", async () => {
             assistantStreamBubble.appendChild(ragBadge);
             if (queryStartTime) {
               const totalSec = ((performance.now() - queryStartTime) / 1000).toFixed(2);
-              const badge = document.createElement("span");
-              badge.className = "bubble-latency";
-              badge.textContent = `⏱ ${totalSec}s total`;
-              assistantStreamBubble.appendChild(badge);
+              const latencyBadge = document.createElement("span");
+              latencyBadge.className = "bubble-latency";
+              latencyBadge.textContent = `⏱ ${totalSec}s total`;
+              assistantStreamBubble.appendChild(latencyBadge);
               log(`⏱ Response complete: ${totalSec}s total`);
               queryStartTime = null;
             }
