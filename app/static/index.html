@@ -387,6 +387,17 @@
       background: #6366f120;
       color: #6366f1;
     }
+    .bubble-rag-badge {
+      display: inline-block;
+      margin-top: .3rem;
+      margin-right: .3rem;
+      padding: .15rem .45rem;
+      border-radius: 6px;
+      font-size: .6rem;
+      font-weight: 600;
+      background: #22c55e18;
+      color: var(--green);
+    }
 
     /* ── Typing indicator bar ────────────────────────────── */
     .typing-bar {
@@ -443,7 +454,7 @@
     <div class="header-left">
       <div>
         <h1>📞 Agent Assist Dashboard</h1>
-        <span class="subtitle">Real-time STT → RAG → Gemini + Compliance Monitoring</span>
+        <span class="subtitle">Real-time STT → RAG → Gemini &nbsp;|&nbsp; Agent Assist + Compliance Monitoring</span>
       </div>
     </div>
     <div class="header-right">
@@ -496,7 +507,10 @@
       <div class="compliance-header">
         <div class="compliance-header-left">
           <span class="icon">🛡️</span>
-          <h2>Compliance Alerts</h2>
+          <div>
+            <h2>Compliance Alerts</h2>
+            <span style="font-size:.6rem;color:var(--muted);">Credit card offer violation detection</span>
+          </div>
         </div>
         <span class="alert-counter" id="alertCounter">0</span>
       </div>
@@ -508,11 +522,14 @@
       </div>
     </div>
 
-    <!-- Content – WhatsApp-style unified chat (right) -->
+    <!-- Content – Agent Assist chat (right) -->
     <div class="content">
       <div class="chat-header">
-        <span class="icon">💬</span>
-        <h2>Live Conversation</h2>
+        <span class="icon">🤖</span>
+        <div>
+          <h2>Agent Assist</h2>
+          <span style="font-size:.65rem;color:var(--muted);">RAG-powered suggestions &amp; live transcription</span>
+        </div>
       </div>
       <div class="chat-messages" id="chatMessages">
         <p class="placeholder">Start a call to see the conversation…</p>
@@ -811,9 +828,14 @@ connectBtn.addEventListener("click", async () => {
         if (msg.type === "stream_end" && msg.role === "assistant") {
           if (assistantStreamBubble) {
             assistantStreamBubble.classList.remove("interim");
+            // Add RAG-grounded badge to show this response used the knowledge base
+            const ragBadge = document.createElement("span");
+            ragBadge.className = "bubble-rag-badge";
+            ragBadge.textContent = "📚 RAG-grounded";
+            assistantStreamBubble.appendChild(ragBadge);
             if (queryStartTime) {
               const totalSec = ((performance.now() - queryStartTime) / 1000).toFixed(2);
-              const badge = document.createElement("div");
+              const badge = document.createElement("span");
               badge.className = "bubble-latency";
               badge.textContent = `⏱ ${totalSec}s total`;
               assistantStreamBubble.appendChild(badge);
