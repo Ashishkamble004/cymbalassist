@@ -6,6 +6,7 @@ Pipeline:  Audio In → Streaming STT → RAG Context Injection → LLM → Text
 
 Uses native WebSocket with raw PCM audio (16kHz, 16-bit, mono).
 Implements streaming Speech-to-Text for low-latency transcription.
+Includes real-time compliance monitoring for credit-card offer violations.
 """
 
 import asyncio
@@ -24,6 +25,7 @@ from google import genai
 from google.genai import types
 
 from app.config import settings
+from app.compliance import ComplianceMonitor
 
 
 # --------------------------------------------------------------------------- #
@@ -233,30 +235,71 @@ async def run_agent(
         ),
     )
     
+    # Create compliance monitor for real-time violation detection
+    compliance_monitor = ComplianceMonitor(client=client, llm_model=llm_model)
+    
     logger.info(f"Agent started: STT={stt_model}@{stt_location}, LLM={llm_model}, language={stt_language}")
     
     # Track transcript state
     current_transcript = ""
     last_final_transcript = ""
     pending_llm_task = None
+    pending_compliance_task = None
+    segment_counter = 0
+    
+    async def run_compliance_check():
+        """Run compliance analysis and send results over WebSocket."""
+        try:
+            result = await compliance_monitor.analyze()
+            if result is None:
+                return
+            
+            # Send speaker role updates
+            if result["speaker_roles"]:
+                await websocket.send_text(json.dumps({
+                    "type": "speaker_update",
+                    "roles": result["speaker_roles"],
+                }))
+            
+            # Send new compliance alerts
+            for alert in result["new_alerts"]:
+                await websocket.send_text(json.dumps({
+                    "type": "compliance_alert",
+                    "alert": alert,
+                }))
+                logger.warning(
+                    f"Compliance alert [{alert.get('severity', 'unknown')}]: "
+                    f"{alert.get('title', 'N/A')}"
+                )
+        except Exception as e:
+            logger.error(f"Compliance check error: {e}")
     
     async def handle_transcript(transcript: str, is_final: bool):
         """Handle incoming transcripts from streaming STT."""
         nonlocal current_transcript, last_final_transcript, pending_llm_task
+        nonlocal pending_compliance_task, segment_counter
         
         current_transcript = transcript
         
         # Send interim transcripts to client for real-time display
-        await websocket.send_text(json.dumps({
+        msg = {
             "type": "transcription",
             "role": "user",
             "text": transcript,
             "is_final": is_final,
-        }))
+        }
+        
+        if is_final and transcript.strip():
+            # Assign a segment index for speaker tracking
+            seg_idx = compliance_monitor.add_segment(transcript)
+            msg["segment_index"] = seg_idx
+            segment_counter += 1
+        
+        await websocket.send_text(json.dumps(msg))
         
         if is_final and transcript.strip():
             last_final_transcript = transcript
-            logger.info(f"Final transcript: {transcript}")
+            logger.info(f"Final transcript [seg {msg.get('segment_index', '?')}]: {transcript}")
             
             # Cancel any pending LLM task
             if pending_llm_task and not pending_llm_task.done():
@@ -266,6 +309,12 @@ async def run_agent(
             pending_llm_task = asyncio.create_task(
                 process_with_rag_llm(websocket, chat, transcript)
             )
+            
+            # Trigger compliance analysis (non-blocking)
+            if pending_compliance_task is None or pending_compliance_task.done():
+                pending_compliance_task = asyncio.create_task(
+                    run_compliance_check()
+                )
     
     # Create streaming STT manager
     stt_manager = StreamingSTTManager(
@@ -300,6 +349,8 @@ async def run_agent(
         stt_manager.stop()
         if pending_llm_task and not pending_llm_task.done():
             pending_llm_task.cancel()
+        if pending_compliance_task and not pending_compliance_task.done():
+            pending_compliance_task.cancel()
 
 
 async def process_with_rag_llm(

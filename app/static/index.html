@@ -36,20 +36,23 @@
       flex-shrink: 0;
       background: var(--surface);
       border-bottom: 1px solid var(--border);
-      padding: 1rem 2rem;
+      padding: .75rem 1.5rem;
       display: flex;
       align-items: center;
       justify-content: space-between;
     }
-    .header h1 { font-size: 1.2rem; font-weight: 700; }
-    .header .subtitle { color: var(--muted); font-size: .8rem; }
+    .header-left { display: flex; align-items: center; gap: 1rem; }
+    .header h1 { font-size: 1.1rem; font-weight: 700; }
+    .header .subtitle { color: var(--muted); font-size: .75rem; }
+    .header-right { display: flex; align-items: center; gap: .75rem; }
+
     .status-badge {
       display: inline-flex;
       align-items: center;
       gap: .4rem;
-      padding: .3rem .75rem;
+      padding: .25rem .65rem;
       border-radius: 20px;
-      font-size: .75rem;
+      font-size: .72rem;
       font-weight: 600;
       background: #22c55e18;
       color: var(--green);
@@ -57,70 +60,221 @@
     .status-badge.disconnected { background: #ef444418; color: var(--red); }
     .status-badge.connecting   { background: #f59e0b18; color: var(--amber); }
     .status-badge .dot {
-      width: 8px; height: 8px; border-radius: 50%;
+      width: 7px; height: 7px; border-radius: 50%;
       background: currentColor;
     }
 
-    /* ── Main layout ────────────────────────────────────── */
-    .main { display: flex; flex: 1; overflow: hidden; }
-
-    /* ── Sidebar (config) ───────────────────────────────── */
-    .sidebar {
-      width: 320px;
-      min-width: 320px;
-      background: var(--surface);
-      border-right: 1px solid var(--border);
-      padding: 1.25rem;
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-      overflow: hidden;
-    }
-    .sidebar h3 {
-      font-size: .72rem;
-      text-transform: uppercase;
-      letter-spacing: .06em;
-      color: var(--muted);
-      margin-bottom: .5rem;
-    }
-    .field { display: flex; flex-direction: column; gap: .3rem; }
-    .field label {
-      font-size: .75rem; color: var(--muted); font-weight: 500;
-    }
-    .field input, .field select {
+    /* ── Settings toggle ───────────────────────────────── */
+    .settings-toggle {
       background: var(--bg);
       border: 1px solid var(--border);
       border-radius: 8px;
-      padding: .55rem .75rem;
+      padding: .4rem .7rem;
+      color: var(--muted);
+      font-size: .78rem;
+      cursor: pointer;
+      transition: all .15s;
+      display: flex;
+      align-items: center;
+      gap: .35rem;
+    }
+    .settings-toggle:hover { border-color: var(--accent); color: var(--text); }
+
+    /* ── Settings drawer ──────────────────────────────── */
+    .settings-drawer {
+      display: none;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: .75rem 1.5rem;
+      gap: 1rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .settings-drawer.open { display: flex; }
+    .settings-drawer .field {
+      display: flex;
+      align-items: center;
+      gap: .4rem;
+    }
+    .settings-drawer label {
+      font-size: .72rem;
+      color: var(--muted);
+      font-weight: 500;
+      white-space: nowrap;
+    }
+    .settings-drawer select, .settings-drawer input {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: .35rem .55rem;
       color: var(--text);
-      font-size: .85rem;
+      font-size: .78rem;
       outline: none;
     }
-    .field input:focus, .field select:focus {
-      border-color: var(--accent);
-    }
+    .settings-drawer select:focus { border-color: var(--accent); }
+
     .btn {
-      padding: .65rem 1.25rem;
+      padding: .4rem .9rem;
       border: none;
-      border-radius: 8px;
+      border-radius: 6px;
       font-weight: 600;
-      font-size: .85rem;
+      font-size: .78rem;
       cursor: pointer;
       transition: all .15s;
     }
-    .btn-primary {
-      background: var(--accent);
-      color: #fff;
-    }
+    .btn-primary { background: var(--accent); color: #fff; }
     .btn-primary:hover { opacity: .9; }
-    .btn-danger {
-      background: var(--red);
-      color: #fff;
-    }
+    .btn-danger { background: var(--red); color: #fff; }
     .btn-danger:hover { opacity: .9; }
     .btn:disabled { opacity: .4; cursor: not-allowed; }
 
-    /* ── Chat container ─────────────────────────────────── */
+    /* ── Main layout: Compliance | Chat ────────────────── */
+    .main { display: flex; flex: 1; overflow: hidden; }
+
+    /* ── Compliance panel (left) ──────────────────────── */
+    .compliance-panel {
+      width: 380px;
+      min-width: 380px;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .compliance-header {
+      padding: .75rem 1rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--surface);
+    }
+    .compliance-header-left {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+    }
+    .compliance-header h2 { font-size: .85rem; font-weight: 600; }
+    .compliance-header .icon {
+      width: 28px; height: 28px;
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: .85rem;
+      background: #ef444420; color: var(--red);
+    }
+    .alert-counter {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 22px;
+      height: 22px;
+      padding: 0 .4rem;
+      border-radius: 11px;
+      font-size: .68rem;
+      font-weight: 700;
+      background: var(--bg);
+      color: var(--muted);
+    }
+    .alert-counter.has-alerts {
+      background: var(--red);
+      color: #fff;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: .7; }
+    }
+
+    .compliance-alerts {
+      flex: 1;
+      overflow-y: auto;
+      padding: .75rem;
+      display: flex;
+      flex-direction: column;
+      gap: .5rem;
+    }
+    .compliance-alerts::-webkit-scrollbar { width: 5px; }
+    .compliance-alerts::-webkit-scrollbar-thumb {
+      background: var(--border); border-radius: 3px;
+    }
+
+    .compliance-placeholder {
+      color: var(--muted);
+      font-style: italic;
+      font-size: .8rem;
+      text-align: center;
+      padding: 2rem 1rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: .5rem;
+    }
+    .compliance-placeholder .shield {
+      font-size: 2rem;
+      opacity: .4;
+    }
+
+    /* ── Alert card ─────────────────────────────────────── */
+    .alert-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: .75rem;
+      animation: alertIn .3s ease;
+    }
+    @keyframes alertIn {
+      from { opacity: 0; transform: translateX(-10px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+    .alert-card.severity-high {
+      border-color: #ef444460;
+      background: #ef444410;
+    }
+    .alert-card.severity-medium {
+      border-color: #f59e0b60;
+      background: #f59e0b10;
+    }
+    .alert-card.severity-low {
+      border-color: #6366f160;
+      background: #6366f110;
+    }
+    .alert-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: .4rem;
+    }
+    .alert-severity {
+      display: inline-flex;
+      align-items: center;
+      gap: .25rem;
+      padding: .15rem .5rem;
+      border-radius: 4px;
+      font-size: .62rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+    .alert-severity.high   { background: #ef444430; color: var(--red); }
+    .alert-severity.medium { background: #f59e0b30; color: var(--amber); }
+    .alert-severity.low    { background: #6366f130; color: var(--accent); }
+    .alert-time {
+      font-size: .62rem;
+      color: var(--muted);
+      font-family: monospace;
+    }
+    .alert-title {
+      font-size: .8rem;
+      font-weight: 600;
+      margin-bottom: .25rem;
+    }
+    .alert-description {
+      font-size: .75rem;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    /* ── Chat container (right) ─────────────────────────── */
     .content {
       flex: 1;
       display: flex;
@@ -161,7 +315,7 @@
       background: var(--border); border-radius: 3px;
     }
 
-    /* ── Chat bubbles (WhatsApp-style) ───────────────────── */
+    /* ── Chat bubbles ───────────────────────────────────── */
     .bubble {
       max-width: 75%;
       padding: .65rem .9rem .45rem;
@@ -189,6 +343,12 @@
       border: 1px solid #22c55e30;
       border-bottom-right-radius: 4px;
     }
+    .bubble-agent {
+      align-self: flex-end;
+      background: #1a1040;
+      border: 1px solid #6366f130;
+      border-bottom-right-radius: 4px;
+    }
     .bubble-meta {
       display: flex;
       align-items: center;
@@ -203,6 +363,7 @@
     }
     .bubble-left .bubble-role  { color: #3b82f6; }
     .bubble-right .bubble-role { color: #22c55e; }
+    .bubble-agent .bubble-role { color: #a78bfa; }
     .bubble-time {
       font-size: .62rem;
       color: var(--muted);
@@ -225,6 +386,21 @@
       font-family: monospace;
       background: #6366f120;
       color: #6366f1;
+    }
+    .bubble-rag-badge {
+      display: inline-block;
+      margin-top: .3rem;
+      margin-right: .3rem;
+      padding: .15rem .45rem;
+      border-radius: 6px;
+      font-size: .6rem;
+      font-weight: 600;
+      background: #22c55e18;
+      color: var(--green);
+    }
+    .panel-subtitle {
+      font-size: .62rem;
+      color: var(--muted);
     }
 
     /* ── Typing indicator bar ────────────────────────────── */
@@ -269,7 +445,7 @@
       padding: .5rem 1.25rem;
       font-size: .7rem;
       color: var(--muted);
-      height: 80px;
+      height: 60px;
       overflow-y: auto;
       font-family: monospace;
     }
@@ -279,78 +455,92 @@
 
   <!-- Header -->
   <div class="header">
-    <div>
-      <h1>📞 Agent Assist Dashboard</h1>
-      <span class="subtitle">Real-time STT → RAG → Gemini</span>
+    <div class="header-left">
+      <div>
+        <h1>📞 Agent Assist Dashboard</h1>
+        <span class="subtitle">Real-time STT → RAG → Gemini &nbsp;|&nbsp; Agent Assist + Compliance Monitoring</span>
+      </div>
     </div>
-    <span class="status-badge disconnected" id="statusBadge">
-      <span class="dot"></span>
-      <span id="statusText">Disconnected</span>
-    </span>
+    <div class="header-right">
+      <button class="settings-toggle" id="settingsToggle">⚙️ Settings</button>
+      <span class="status-badge disconnected" id="statusBadge">
+        <span class="dot"></span>
+        <span id="statusText">Disconnected</span>
+      </span>
+    </div>
+  </div>
+
+  <!-- Settings drawer (collapsible) -->
+  <div class="settings-drawer" id="settingsDrawer">
+    <div class="field">
+      <label for="sttModel">STT:</label>
+      <select id="sttModel" disabled>
+        <option value="chirp_3" selected>chirp_3</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="sttLang">Language:</label>
+      <select id="sttLang">
+        <option value="auto" selected>Auto-detect</option>
+        <option value="hi-IN,en-IN">Hindi + English</option>
+        <option value="en-US">English (US)</option>
+        <option value="en-IN">English (India)</option>
+        <option value="hi-IN">Hindi</option>
+        <option value="mr-IN">Marathi</option>
+        <option value="ta-IN">Tamil</option>
+        <option value="te-IN">Telugu</option>
+        <option value="kn-IN">Kannada</option>
+        <option value="gu-IN">Gujarati</option>
+        <option value="bn-IN">Bengali</option>
+        <option value="ml-IN">Malayalam</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="llmModel">LLM:</label>
+      <select id="llmModel" disabled>
+        <option value="gemini-2.5-flash" selected>gemini-2.5-flash</option>
+      </select>
+    </div>
+    <button class="btn btn-primary" id="connectBtn">Connect & Start</button>
+    <button class="btn btn-danger" id="disconnectBtn" disabled>Disconnect</button>
   </div>
 
   <div class="main">
-    <!-- Sidebar -->
-    <div class="sidebar">
-      <div>
-        <h3>Connection</h3>
-      </div>
-
-      <div>
-        <h3>Speech-to-Text</h3>
-        <div class="field">
-          <label for="sttModel">STT Model</label>
-          <select id="sttModel" disabled>
-            <option value="chirp_3" selected>chirp_3</option>
-          </select>
+    <!-- Compliance Panel (left) -->
+    <div class="compliance-panel">
+      <div class="compliance-header">
+        <div class="compliance-header-left">
+          <span class="icon">🛡️</span>
+          <div>
+            <h2>Compliance Alerts</h2>
+            <span class="panel-subtitle">Credit card offer violation detection</span>
+          </div>
         </div>
-        <div class="field">
-          <label for="sttLang">Language Detection</label>
-          <select id="sttLang">
-            <option value="auto" selected>Auto-detect (any language)</option>
-            <option value="hi-IN,en-IN">Hindi + English</option>
-            <option value="en-US">English (US)</option>
-            <option value="en-IN">English (India)</option>
-            <option value="hi-IN">Hindi</option>
-            <option value="mr-IN">Marathi</option>
-            <option value="ta-IN">Tamil</option>
-            <option value="te-IN">Telugu</option>
-            <option value="kn-IN">Kannada</option>
-            <option value="gu-IN">Gujarati</option>
-            <option value="bn-IN">Bengali</option>
-            <option value="ml-IN">Malayalam</option>
-          </select>
-        </div>
+        <span class="alert-counter" id="alertCounter">0</span>
       </div>
-
-      <div>
-        <h3>LLM (Gemini)</h3>
-        <div class="field">
-          <label for="llmModel">Model</label>
-          <select id="llmModel" disabled>
-            <option value="gemini-2.5-flash" selected>gemini-2.5-flash</option>
-          </select>
+      <div class="compliance-alerts" id="complianceAlerts">
+        <div class="compliance-placeholder" id="compliancePlaceholder">
+          <span class="shield">🛡️</span>
+          <span>Monitoring active. Compliance alerts will appear here when violations are detected.</span>
         </div>
-      </div>
-
-      <div style="margin-top: auto; display: flex; flex-direction: column; gap: .5rem;">
-        <button class="btn btn-primary" id="connectBtn">Connect & Start</button>
-        <button class="btn btn-danger" id="disconnectBtn" disabled>Disconnect</button>
       </div>
     </div>
 
-    <!-- Content – WhatsApp-style unified chat -->
+    <!-- Content – Agent Assist chat (right) -->
     <div class="content">
       <div class="chat-header">
-        <span class="icon">💬</span>
-        <h2>Live Conversation</h2>
+        <span class="icon">🤖</span>
+        <div>
+          <h2>Agent Assist</h2>
+          <span class="panel-subtitle">RAG-powered suggestions &amp; live transcription</span>
+        </div>
       </div>
       <div class="chat-messages" id="chatMessages">
         <p class="placeholder">Start a call to see the conversation…</p>
       </div>
       <div class="typing-bar" id="typingBar">
         <div class="typing-dots"><span></span><span></span><span></span></div>
-        <span>Customer is speaking…</span>
+        <span>Speaking…</span>
       </div>
     </div>
   </div>
@@ -360,19 +550,24 @@
 
 <script type="module">
 // ────────────────────────────────────────────────────────────────────────── //
-//  AudioWorklet + WebSocket  —  WhatsApp-style chat UI                       //
+//  AudioWorklet + WebSocket — Chat UI + Compliance Monitoring                //
 // ────────────────────────────────────────────────────────────────────────── //
 
-const sttModelSel   = document.getElementById("sttModel");
-const sttLangSel    = document.getElementById("sttLang");
-const llmModelSel   = document.getElementById("llmModel");
-const connectBtn    = document.getElementById("connectBtn");
-const disconnectBtn = document.getElementById("disconnectBtn");
-const statusBadge   = document.getElementById("statusBadge");
-const statusText    = document.getElementById("statusText");
-const chatMessages  = document.getElementById("chatMessages");
-const typingBar     = document.getElementById("typingBar");
-const debugLog      = document.getElementById("debugLog");
+const sttModelSel      = document.getElementById("sttModel");
+const sttLangSel       = document.getElementById("sttLang");
+const llmModelSel      = document.getElementById("llmModel");
+const connectBtn       = document.getElementById("connectBtn");
+const disconnectBtn    = document.getElementById("disconnectBtn");
+const statusBadge      = document.getElementById("statusBadge");
+const statusText       = document.getElementById("statusText");
+const chatMessages     = document.getElementById("chatMessages");
+const typingBar        = document.getElementById("typingBar");
+const debugLog         = document.getElementById("debugLog");
+const settingsToggle   = document.getElementById("settingsToggle");
+const settingsDrawer   = document.getElementById("settingsDrawer");
+const complianceAlerts = document.getElementById("complianceAlerts");
+const compliancePlaceholder = document.getElementById("compliancePlaceholder");
+const alertCounter     = document.getElementById("alertCounter");
 
 let ws = null;
 let audioContext = null;
@@ -380,8 +575,17 @@ let mediaStream = null;
 let workletNode = null;
 let interimBubble = null;
 let assistantStreamBubble = null;
-let queryStartTime = null;          // timestamp when final transcript fires
-let firstChunkReceived = false;     // track TTFC
+let queryStartTime = null;
+let firstChunkReceived = false;
+let alertCount = 0;
+
+// Map segment index → bubble element (for speaker role updates)
+const segmentBubbles = new Map();
+
+// ── Settings drawer toggle ────────────────────────────────────────────── //
+settingsToggle.addEventListener("click", () => {
+  settingsDrawer.classList.toggle("open");
+});
 
 // ── Helpers ───────────────────────────────────────────────────────────── //
 function log(msg) {
@@ -410,12 +614,22 @@ function scrollChat() {
   chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
-/** Create a WhatsApp-style chat bubble. */
+/** Create a chat bubble. role: "user" | "assistant" | "agent" | "customer" */
 function makeBubble(role, text, interim = false) {
-  const side  = role === "user" ? "left" : "right";
-  const label = role === "user" ? "🎤 Customer" : "🤖 AI Assistant";
-  const div   = document.createElement("div");
-  div.className = `bubble bubble-${side}` + (interim ? " interim" : "");
+  let side, label, cssClass;
+  switch (role) {
+    case "agent":
+      side = "agent"; label = "🧑‍💼 Agent"; cssClass = "bubble-agent"; break;
+    case "customer":
+      side = "left"; label = "🎤 Customer"; cssClass = "bubble-left"; break;
+    case "assistant":
+      side = "right"; label = "🤖 AI Assistant"; cssClass = "bubble-right"; break;
+    default: // "user" – before speaker identification
+      side = "left"; label = "🎙️ Speaker"; cssClass = "bubble-left"; break;
+  }
+
+  const div = document.createElement("div");
+  div.className = `bubble ${cssClass}` + (interim ? " interim" : "");
   div.innerHTML =
     `<div class="bubble-meta">` +
     `<span class="bubble-role">${label}</span>` +
@@ -425,12 +639,77 @@ function makeBubble(role, text, interim = false) {
   return div;
 }
 
+/** Update a bubble's speaker role after identification. */
+function updateBubbleRole(bubble, role) {
+  if (!bubble) return;
+  let label, cssClass;
+  switch (role) {
+    case "agent":
+      label = "🧑‍💼 Agent"; cssClass = "bubble-agent"; break;
+    case "customer":
+      label = "🎤 Customer"; cssClass = "bubble-left"; break;
+    default: return;
+  }
+  // Update CSS class
+  bubble.classList.remove("bubble-left", "bubble-right", "bubble-agent");
+  bubble.classList.add(cssClass);
+  // Update role label
+  const roleEl = bubble.querySelector(".bubble-role");
+  if (roleEl) roleEl.textContent = label;
+}
+
+/** Add a compliance alert to the panel. */
+function addComplianceAlert(alert) {
+  if (compliancePlaceholder) compliancePlaceholder.remove();
+
+  alertCount++;
+  alertCounter.textContent = alertCount;
+  alertCounter.classList.add("has-alerts");
+
+  const card = document.createElement("div");
+  card.className = `alert-card severity-${alert.severity || "low"}`;
+
+  const severityIcon = alert.severity === "high" ? "🔴" :
+                       alert.severity === "medium" ? "🟡" : "🔵";
+
+  card.innerHTML =
+    `<div class="alert-card-header">` +
+    `<span class="alert-severity ${alert.severity || "low"}">${severityIcon} ${(alert.severity || "low").toUpperCase()}</span>` +
+    `<span class="alert-time">${alert.timestamp || timeNow()}</span>` +
+    `</div>` +
+    `<div class="alert-title">${escapeHtml(alert.title || "Compliance Alert")}</div>` +
+    `<div class="alert-description">${escapeHtml(alert.description || "")}</div>`;
+
+  complianceAlerts.prepend(card);
+  log(`⚠️ Compliance alert [${alert.severity}]: ${alert.title}`);
+}
+
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 // ── Connect ───────────────────────────────────────────────────────────── //
 connectBtn.addEventListener("click", async () => {
   setStatus("Connecting");
   connectBtn.disabled = true;
   log("Connecting…");
   chatMessages.innerHTML = '<p class="placeholder">Listening…</p>';
+
+  // Reset compliance state
+  alertCount = 0;
+  alertCounter.textContent = "0";
+  alertCounter.classList.remove("has-alerts");
+  complianceAlerts.innerHTML =
+    '<div class="compliance-placeholder" id="compliancePlaceholder">' +
+    '<span class="shield">🛡️</span>' +
+    '<span>Monitoring active. Compliance alerts will appear here when violations are detected.</span>' +
+    '</div>';
+  segmentBubbles.clear();
 
   try {
     mediaStream = await navigator.mediaDevices.getUserMedia({
@@ -474,10 +753,10 @@ connectBtn.addEventListener("click", async () => {
       try {
         const msg = JSON.parse(event.data);
 
+        // ── Transcription (both speakers) ────────────────────── //
         if (msg.type === "transcription" || msg.type === "transcript") {
           const text = msg.text || msg.content || "";
 
-          // ── Customer (left side) ─────────────────────────────── //
           if (msg.role === "user") {
             clearPlaceholder();
             if (msg.is_final === false) {
@@ -493,20 +772,43 @@ connectBtn.addEventListener("click", async () => {
               // Start latency timer on final transcript
               queryStartTime = performance.now();
               firstChunkReceived = false;
+
+              let bubble;
               if (interimBubble) {
                 interimBubble.classList.remove("interim");
                 interimBubble.querySelector(".bubble-text").textContent = text;
                 interimBubble.querySelector(".bubble-time").textContent = timeNow();
+                bubble = interimBubble;
                 interimBubble = null;
               } else {
-                chatMessages.appendChild(makeBubble("user", text));
+                bubble = makeBubble("user", text);
+                chatMessages.appendChild(bubble);
+              }
+
+              // Track segment index for speaker role updates
+              if (msg.segment_index !== undefined) {
+                segmentBubbles.set(String(msg.segment_index), bubble);
               }
             }
             scrollChat();
           }
         }
 
-        // ── Streaming AI assistant (right side) ──────────────── //
+        // ── Speaker identification updates ──────────────────── //
+        if (msg.type === "speaker_update" && msg.roles) {
+          for (const [idx, role] of Object.entries(msg.roles)) {
+            const bubble = segmentBubbles.get(idx);
+            if (bubble) updateBubbleRole(bubble, role);
+          }
+          log(`Speaker roles updated: ${Object.keys(msg.roles).length} segments identified`);
+        }
+
+        // ── Compliance alerts ────────────────────────────────── //
+        if (msg.type === "compliance_alert" && msg.alert) {
+          addComplianceAlert(msg.alert);
+        }
+
+        // ── Streaming AI assistant ──────────────────────────── //
         if (msg.type === "stream_start" && msg.role === "assistant") {
           clearPlaceholder();
           assistantStreamBubble = makeBubble("assistant", "", true);
@@ -516,7 +818,6 @@ connectBtn.addEventListener("click", async () => {
 
         if (msg.type === "stream_chunk" && msg.role === "assistant") {
           if (assistantStreamBubble) {
-            // Record time-to-first-chunk
             if (!firstChunkReceived && queryStartTime) {
               firstChunkReceived = true;
               const ttfc = ((performance.now() - queryStartTime) / 1000).toFixed(2);
@@ -531,14 +832,17 @@ connectBtn.addEventListener("click", async () => {
         if (msg.type === "stream_end" && msg.role === "assistant") {
           if (assistantStreamBubble) {
             assistantStreamBubble.classList.remove("interim");
-            // Calculate and display total latency
+            // Add RAG-grounded badge to show this response used the knowledge base
+            const ragBadge = document.createElement("span");
+            ragBadge.className = "bubble-rag-badge";
+            ragBadge.textContent = "📚 RAG-grounded";
+            assistantStreamBubble.appendChild(ragBadge);
             if (queryStartTime) {
               const totalSec = ((performance.now() - queryStartTime) / 1000).toFixed(2);
-              const ttfc = firstChunkReceived ? "" : "";
-              const badge = document.createElement("div");
-              badge.className = "bubble-latency";
-              badge.textContent = `⏱ ${totalSec}s total`;
-              assistantStreamBubble.appendChild(badge);
+              const latencyBadge = document.createElement("span");
+              latencyBadge.className = "bubble-latency";
+              latencyBadge.textContent = `⏱ ${totalSec}s total`;
+              assistantStreamBubble.appendChild(latencyBadge);
               log(`⏱ Response complete: ${totalSec}s total`);
               queryStartTime = null;
             }
